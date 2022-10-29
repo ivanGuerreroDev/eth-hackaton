@@ -1,0 +1,17 @@
+{
+  "name": "eth-hackaton-contracts",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Ivan Guerrero @ivanguerrerodev",
+  "license": "MIT",
+  "devDependencies": {
+    "hardhat": "^2.12.1"
+  },
+  "dependencies": {
+    "@chainlink/contracts": "^0.5.1"
+  }
+}
