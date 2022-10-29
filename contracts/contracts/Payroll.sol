@@ -1,8 +1,8 @@
 //SPDX-License-Identifier: MIT
-pragma solidity >=0.7.0 <0.9.0;
+pragma solidity >=0.8.0 <0.9.0;
 import "./models/Company.sol";
 import "./models/Worker.sol";
-import "../node_modules/@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
+import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 
 contract Payroll {
     address owner;
@@ -20,10 +20,14 @@ contract Payroll {
         require(msg.sender == companies[company].owner, "Owner reserved only");
         _;
     }
-
+    /**
+     * Network: Goerli
+     * Aggregator: ETH/USD
+     * Address: 0xD4a33860578De61DBAbDc8BFdb98FD742fA7028e
+     */
     constructor() {
         owner = msg.sender;
-        usdPriceFeed = AggregatorV3Interface(0x9326BFA02ADD2366b30bacB125260Af641031331);
+        usdPriceFeed = AggregatorV3Interface(0xD4a33860578De61DBAbDc8BFdb98FD742fA7028e);
     }
 
     function addWorker(uint256 company, address worker, uint256 salary, string memory name, string memory dni)
@@ -81,19 +85,31 @@ contract Payroll {
     }
 
     function payTo(address to, uint256 amount) internal returns (bool) {
-        (bool success, ) = payable(to).call{value: amount}("");
+        // ETH price
+        (
+            uint80 roundID, 
+            int price,
+            uint startedAt,
+            uint timeStamp,
+            uint80 answeredInRound
+        ) = usdPriceFeed.latestRoundData();
+        // Decimals
+        int decimals = int(uint(usdPriceFeed.decimals()));
+        uint amountWithDecimals = amount;
+        for (uint8 i = 0; i < 18; i++) {
+            amountWithDecimals = amountWithDecimals * 10;
+        }
+        uint priceWithDecimals = uint(price);
+        int leftFor = 4 - decimals;
+        uint left = uint((leftFor)*(-1));
+        for (uint8 i = 0; i < left; i++) {
+            priceWithDecimals = priceWithDecimals / 10;
+        }
+        uint decimalsAmount = amountWithDecimals / priceWithDecimals;
+        uint weiAmount = decimalsAmount * 100;
+
+        (bool success, ) = payable(to).call{value: weiAmount }("");
         require(success, "Payment failed");
         return true;
     }
-
-    function getLatestPrice() public view returns (int) {
-    (
-        uint80 roundID, 
-        int price,
-        uint startedAt,
-        uint timeStamp,
-        uint80 answeredInRound
-    ) = usdPriceFeed.latestRoundData();
-    return price;
-}
 }
